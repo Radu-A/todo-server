@@ -1,0 +1,16 @@
+# Directorios de dependencias
+node_modules/
+/dist
+/build
+
+# Archivos de depuración y logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Variables de entorno y archivos de configuración
+.env
+.env.local
+
+# Archivos del sistema operativo
+.DS_Store
