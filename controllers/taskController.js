@@ -46,6 +46,71 @@ const createTask = async (req, res) => {
   }
 };
 
+const updateTask = async (req, res) => {
+  // 1. Obtener los IDs necesarios
+  const taskId = req.params.id;
+  const userId = dummyUserId; // Temporalmente para validación de propiedad
+  // const { userId } = req.query;
+
+  // 2. Obtener los campos a actualizar del cuerpo de la solicitud (puede ser 'title' y/o 'status')
+  const updateData = req.body;
+
+  if (!userId) {
+    return res.status(400).json({
+      message:
+        "El userId es obligatorio como query parameter para validar la propiedad.",
+    });
+  }
+
+  // Opcional: Validación extra para asegurar que solo se actualicen campos permitidos
+  const allowedUpdates = ["title", "status"];
+  const updates = Object.keys(updateData);
+  const isValidOperation = updates.every((update) =>
+    allowedUpdates.includes(update)
+  );
+
+  if (!isValidOperation) {
+    return res.status(400).json({
+      message: "Actualización inválida. Solo se permiten title y status.",
+    });
+  }
+
+  try {
+    // 3. Buscar la tarea por _id Y userId (seguridad) y aplicar los cambios
+    const updatedTask = await Task.findOneAndUpdate(
+      { _id: taskId, userId: userId }, // Criterios de búsqueda (ID de tarea y ID de usuario)
+      { $set: updateData }, // Datos a actualizar ($set asegura que solo se actualicen los campos pasados)
+      { new: true, runValidators: true } // Opciones: devolver el documento nuevo y ejecutar validadores de Schema
+    );
+
+    // 4. Verificar si se encontró y actualizó la tarea
+    if (!updatedTask) {
+      // Tarea no encontrada o no pertenece al usuario
+      return res
+        .status(404)
+        .json({ message: "Tarea no encontrada o no pertenece al usuario." });
+    }
+
+    // 5. Responder con el objeto actualizado
+    return res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error("Error al actualizar la tarea:", error);
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json({ message: "Formato de ID de tarea inválido." });
+    }
+    // Manejar error de validación de Schema (ej. status inválido)
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
+    return res.status(500).json({
+      message: "Error en el servidor al actualizar la tarea",
+      error: error.message,
+    });
+  }
+};
+
 const deleteTask = async (req, res) => {
   // 1. Obtener el ID de la tarea desde los parámetros de la ruta
   const taskId = req.params.id;
@@ -54,12 +119,9 @@ const deleteTask = async (req, res) => {
   const { userId } = req.body;
 
   if (!userId) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "El userId es obligatorio en el body para validar la propiedad.",
-      });
+    return res.status(400).json({
+      message: "El userId es obligatorio en el body para validar la propiedad.",
+    });
   }
 
   try {
@@ -100,4 +162,4 @@ const deleteTask = async (req, res) => {
   }
 };
 
-export { getTasks, createTask, deleteTask };
+export { getTasks, createTask, updateTask, deleteTask };
