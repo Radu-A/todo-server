@@ -2,15 +2,12 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
+import connectDB from "./db/connect.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const URI = process.env.MONGODB_URI;
-
-console.log(URI);
 
 // ---------------------------------------------------
 // Middleware
@@ -23,16 +20,22 @@ app.get("/", (req, res) => {
 });
 
 // ----------------------------------------------------
-// CONEXIÓN A MONGODB
-// ---------------------------------------------------
-mongoose.connect(URI).then(() => {
-  console.log("✅ MongoDB connection established successfully.");
-});
-
-// ----------------------------------------------------
 // Initialize server
 // ----------------------------------------------------
-app.listen(PORT, () => {
-  console.log(`Server running on port: ${PORT}`);
-  console.log(`Access at: http://localhost:${PORT}`);
-});
+const startServer = async () => {
+  try {
+    // 1. CONEXIÓN A MONGODB: Esperamos a que la base de datos esté lista
+    await connectDB();
+    console.log("✅ MongoDB connection established successfully.");
+
+    // 2. INICIO DEL SERVIDOR: Solo si la DB está conectada
+    app.listen(PORT, () => {
+      console.log(`Server running on port: ${PORT}`);
+      console.log(`Access at: http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to connect to DB or start server:", error);
+  }
+};
+
+startServer();
