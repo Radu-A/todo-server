@@ -46,4 +46,58 @@ const createTask = async (req, res) => {
   }
 };
 
-export { getTasks, createTask };
+const deleteTask = async (req, res) => {
+  // 1. Obtener el ID de la tarea desde los parámetros de la ruta
+  const taskId = req.params.id;
+
+  // 2. Obtener el ID del usuario (temporalmente desde el body, en la fase de auth será req.user.id)
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({
+        message:
+          "El userId es obligatorio en el body para validar la propiedad.",
+      });
+  }
+
+  try {
+    // 3. Buscar y eliminar la tarea:
+    // Utilizamos findOneAndDelete para eliminar solo si el _id de la tarea Y el userId coinciden.
+    const deletedTask = await Task.findOneAndDelete({
+      _id: taskId,
+      userId: userId, // <-- Condición de seguridad
+    });
+
+    // 4. Verificar si se encontró y eliminó la tarea
+    if (!deletedTask) {
+      // Esto significa que:
+      // a) La tarea no existe con ese taskId, O
+      // b) La tarea existe, pero el userId NO COINCIDE.
+      return res
+        .status(404)
+        .json({ message: "Tarea no encontrada o no pertenece al usuario." });
+    }
+
+    // 5. Responder con éxito y el objeto eliminado
+    return res.status(200).json({
+      message: "Tarea eliminada con éxito.",
+      task: deletedTask,
+    });
+  } catch (error) {
+    console.error("Error al eliminar la tarea:", error);
+    // Manejar errores si el ID de la tarea no es válido (ej. formato incorrecto de ObjectId)
+    if (error.name === "CastError") {
+      return res
+        .status(400)
+        .json({ message: "Formato de ID de tarea inválido." });
+    }
+    return res.status(500).json({
+      message: "Error en el servidor al eliminar la tarea",
+      error: error.message,
+    });
+  }
+};
+
+export { getTasks, createTask, deleteTask };
