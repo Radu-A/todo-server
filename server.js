@@ -10,6 +10,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// 1. Opciones de configuración de CORS
+const corsOptions = {
+  // Permite peticiones SÓLO desde tu frontend (puerto 5500)
+  origin: [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500", // <-- Add this one
+  ],
+  // Permite los métodos que usas: GET, POST, PUT, DELETE
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  // Permite encabezados necesarios, incluyendo 'Content-Type' y, más tarde, 'Authorization'
+  allowedHeaders: "Content-Type,Authorization",
+  // Habilita el manejo de credenciales (si usaras cookies)
+  credentials: true,
+};
+
+// 2. Aplicar el middleware CORS
+app.use(cors(corsOptions));
+
 // ---------------------------------------------------
 // Middleware
 // ---------------------------------------------------

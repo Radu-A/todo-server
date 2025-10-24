@@ -1,11 +1,16 @@
 import Task from "../models/Task.js";
 
+// El ID DUMMY se usa para SIMULAR el ID que el middleware de auth inyectará en req.user.id
+// En el futuro, TODAS las referencias a dummyUserId serán reemplazadas por req.user.id.
 const dummyUserId = "60c72b1f9b1e8b0015f4a6e5";
 
+// ===================================
+// 1. GET TASKS (Unificado: Usa dummyUserId)
+// ===================================
 const getTasks = async (req, res) => {
   try {
-    // Buscamos SOLO las tareas donde el campo 'userId' coincida con el ID del usuario (dummy)
-    const tasks = await Task.find({ userId: dummyUserId }); // Devolvemos el array de tareas
+    // Filtra por el ID fijo. En el futuro, será: Task.find({ userId: req.user.id });
+    const tasks = await Task.find({ userId: dummyUserId });
     return res.status(200).json(tasks);
   } catch (error) {
     console.error("Error al obtener las tareas:", error);
@@ -16,11 +21,12 @@ const getTasks = async (req, res) => {
   }
 };
 
+// ===================================
+// 2. CREATE TASK (Unificado: Usa dummyUserId)
+// ===================================
 const createTask = async (req, res) => {
-  // 1. Obtener el 'title' del cuerpo de la solicitud
   const { title } = req.body;
 
-  // 2. Validación simple
   if (!title) {
     return res
       .status(400)
@@ -29,15 +35,11 @@ const createTask = async (req, res) => {
   try {
     const newTask = new Task({
       title,
-      userId: dummyUserId,
+      userId: dummyUserId, // Asigna el ID fijo. En el futuro, será: userId: req.user.id,
     });
-    // 4. Guardar en la base de datos
     const savedTask = await newTask.save();
-
-    // 5. Responder con el objeto de la tarea creada y el código 201 (Created)
     return res.status(201).json(savedTask);
   } catch (error) {
-    // Manejar errores de Mongoose (ej. validación fallida)
     console.error("Error al crear la tarea:", error);
     return res.status(500).json({
       message: "Error en el servidor al crear la tarea",
@@ -46,23 +48,16 @@ const createTask = async (req, res) => {
   }
 };
 
+// ===================================
+// 3. UPDATE TASK (Unificado: Usa dummyUserId, Elimina req.query.userId)
+// ===================================
 const updateTask = async (req, res) => {
-  // 1. Obtener los IDs necesarios
-  const taskId = req.params.id;
-  const userId = dummyUserId; // Temporalmente para validación de propiedad
-  // const { userId } = req.query;
+  // El ID de la tarea a modificar
+  const taskId = req.params.id; // El ID del usuario propietario. En el futuro, será: const userId = req.user.id;
+  const userId = dummyUserId;
 
-  // 2. Obtener los campos a actualizar del cuerpo de la solicitud (puede ser 'title' y/o 'status')
-  const updateData = req.body;
+  const updateData = req.body; // Eliminamos la validación de req.query.userId porque ya no se necesita
 
-  if (!userId) {
-    return res.status(400).json({
-      message:
-        "El userId es obligatorio como query parameter para validar la propiedad.",
-    });
-  }
-
-  // Opcional: Validación extra para asegurar que solo se actualicen campos permitidos
   const allowedUpdates = ["title", "status"];
   const updates = Object.keys(updateData);
   const isValidOperation = updates.every((update) =>
@@ -76,22 +71,19 @@ const updateTask = async (req, res) => {
   }
 
   try {
-    // 3. Buscar la tarea por _id Y userId (seguridad) y aplicar los cambios
+    // Criterios de búsqueda: ID de tarea Y ID de usuario fijo para seguridad
     const updatedTask = await Task.findOneAndUpdate(
-      { _id: taskId, userId: userId }, // Criterios de búsqueda (ID de tarea y ID de usuario)
-      { $set: updateData }, // Datos a actualizar ($set asegura que solo se actualicen los campos pasados)
-      { new: true, runValidators: true } // Opciones: devolver el documento nuevo y ejecutar validadores de Schema
+      { _id: taskId, userId: userId },
+      { $set: updateData },
+      { new: true, runValidators: true }
     );
 
-    // 4. Verificar si se encontró y actualizó la tarea
     if (!updatedTask) {
-      // Tarea no encontrada o no pertenece al usuario
       return res
         .status(404)
         .json({ message: "Tarea no encontrada o no pertenece al usuario." });
     }
 
-    // 5. Responder con el objeto actualizado
     return res.status(200).json(updatedTask);
   } catch (error) {
     console.error("Error al actualizar la tarea:", error);
@@ -100,7 +92,6 @@ const updateTask = async (req, res) => {
         .status(400)
         .json({ message: "Formato de ID de tarea inválido." });
     }
-    // Manejar error de validación de Schema (ej. status inválido)
     if (error.name === "ValidationError") {
       return res.status(400).json({ message: error.message });
     }
@@ -111,45 +102,34 @@ const updateTask = async (req, res) => {
   }
 };
 
+// ===================================
+// 4. DELETE TASK (Unificado: Usa dummyUserId, Elimina req.body.userId)
+// ===================================
 const deleteTask = async (req, res) => {
-  // 1. Obtener el ID de la tarea desde los parámetros de la ruta
-  const taskId = req.params.id;
+  // El ID de la tarea a eliminar
+  const taskId = req.params.id; // El ID del usuario propietario. En el futuro, será: const userId = req.user.id;
 
-  // 2. Obtener el ID del usuario (temporalmente desde el body, en la fase de auth será req.user.id)
-  const { userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({
-      message: "El userId es obligatorio en el body para validar la propiedad.",
-    });
-  }
+  const userId = dummyUserId; // Eliminamos la validación de req.body.userId porque ya no se necesita
 
   try {
-    // 3. Buscar y eliminar la tarea:
-    // Utilizamos findOneAndDelete para eliminar solo si el _id de la tarea Y el userId coinciden.
+    // Criterios de búsqueda: ID de tarea Y ID de usuario fijo para seguridad
     const deletedTask = await Task.findOneAndDelete({
       _id: taskId,
-      userId: userId, // <-- Condición de seguridad
+      userId: userId,
     });
 
-    // 4. Verificar si se encontró y eliminó la tarea
     if (!deletedTask) {
-      // Esto significa que:
-      // a) La tarea no existe con ese taskId, O
-      // b) La tarea existe, pero el userId NO COINCIDE.
       return res
         .status(404)
         .json({ message: "Tarea no encontrada o no pertenece al usuario." });
     }
 
-    // 5. Responder con éxito y el objeto eliminado
     return res.status(200).json({
       message: "Tarea eliminada con éxito.",
       task: deletedTask,
     });
   } catch (error) {
     console.error("Error al eliminar la tarea:", error);
-    // Manejar errores si el ID de la tarea no es válido (ej. formato incorrecto de ObjectId)
     if (error.name === "CastError") {
       return res
         .status(400)
