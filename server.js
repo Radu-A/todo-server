@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./db/connect.js";
 import taskRouter from "./routers/taskRouter.js";
+import authRouter from "./routers/authRouter.js";
 
 dotenv.config();
 
@@ -25,19 +26,17 @@ const corsOptions = {
   credentials: true,
 };
 
-// 2. Aplicar el middleware CORS
-app.use(cors(corsOptions));
-
 // ---------------------------------------------------
 // Middleware
 // ---------------------------------------------------
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // ---------------------------------------------------
 // Routes
 // ---------------------------------------------------
 app.use("/api/tasks", taskRouter);
+app.use("/api/auth", authRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World! The ToDo API server is running.");
