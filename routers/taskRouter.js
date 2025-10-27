@@ -9,8 +9,8 @@ import { protect } from "../middlewares/authenticate.js";
 
 const taskRouter = express.Router();
 
-taskRouter.route("/").get(protect, getTasks).post(createTask);
+taskRouter.route("/").get(protect, getTasks).post(protect, createTask);
 
-taskRouter.route("/:id").delete(deleteTask).patch(updateTask);
+taskRouter.route("/:id").delete(protect, deleteTask).patch(protect, updateTask);
 
 export default taskRouter;
