@@ -1,5 +1,8 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { getUserByEmail } from "./userController.js";
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ID Temporal y fijo para el usuario que crearemos
 const dummyUser = {
@@ -51,11 +54,20 @@ const checkLogin = async (req, res) => {
   }
 
   // 5. SUCCESS (Status 200)
+  // Token data
+  const payload = {
+    userId: user._id,
+    email: user.email,
+  };
+  // Sign payload with secret
+  const token = jwt.sign(payload, JWT_SECRET, {
+    expiresIn: "24h",
+  });
   console.log(`User ${user.email} successfully authenticated.`);
   return res.status(200).json({
-    message: "Successfully connected", // Spanish success message
-    // IMPORTANT: Use 'user' data retrieved from the DB, not 'dummyUser'
-    user: { id: user._id, email: user.email, rol: user.rol },
+    message: "Successfully connected",
+    token: token,
+    user: { id: user._id, email: user.email },
   });
 };
 
