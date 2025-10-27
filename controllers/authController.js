@@ -1,42 +1,62 @@
-// authController.js
-
 import bcrypt from "bcrypt";
+import { getUserByEmail } from "./userController.js";
 
+// ID Temporal y fijo para el usuario que crearemos
 const dummyUser = {
-  id: 1,
-  email: "test@example.com", // Usamos el HASH generado de "password123"
-  password: '$2a$12$im3wfbo.IrHZvNEOpreeieOlW5TjCeF9892BI7YI/iTh2bU5YS4Ay',
-  rol: "admin",
+  _id: "60c72b1f9b1e8b0015f4a6e5",
+  username: "Test",
+  email: "test@example.com",
+  password: "$2a$12$im3wfbo.IrHZvNEOpreeieOlW5TjCeF9892BI7YI/iTh2bU5YS4Ay", // Usamos el HASH generado de "password-123"
 };
 
 const checkLogin = async (req, res) => {
-  // <-- ¡IMPORTANTE! Hacer la función asíncrona
-  const { email, password } = req.body; // 1. Verificar si el email coincide (Paso de la Fase 1)
-  if (email !== dummyUser.email) {
-    // Devolvemos el mismo error para evitar dar pistas a atacantes
-    return res.status(401).json({ message: "Credenciales inválidas" });
+  const { email, password } = req.body;
+  let user;
+  // 1. SEARCH USER => SERVER ERROR
+  try {
+    user = await getUserByEmail(email);
+    console.log("El usuario con el email introducido es: ", user);
+  } catch (error) {
+    console.error("Error en la consulta a la DB:", error);
+    return res.status(500).json({
+      message: "Error interno del servidor",
+    });
   }
 
-  // 2. COMPARACIÓN ASÍNCRONA: Compara la contraseña de texto plano (password)
-  //    con el hash almacenado (dummyUser.password).
+  // 2. VERIFY USER EXISTENCE & WRONG PASSWORD (Status 401)
+
+  // If user is null OR password comparison fails, we return the SAME generic error.
+  if (!user) {
+    console.log(`Login attempt failed: User ${email} not found.`);
+    return res.status(401).json({
+      message: "Invalid credentials", // Ambiguous error in Spanish
+    });
+  }
+
+  // 3. COMPARE PASSWORD & SERVER ERROR HANDLING (Status 500)
   let isMatch;
   try {
-    isMatch = await bcrypt.compare(password, dummyUser.password);
+    // Compare the plain password with the hashed password from the DB (user.password)
+    isMatch = await bcrypt.compare(password, user.password);
   } catch (error) {
-    console.error("Error al comparar hashes:", error);
+    // Handles errors during the hashing/comparison process (e.g., hash corruption)
+    console.error("Bcrypt comparison failed:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 
-  if (isMatch) {
-    // ÉXITO: Contraseña correcta
-    return res.status(200).json({
-      message: "User connected",
-      user: { id: dummyUser.id, email: dummyUser.email, rol: dummyUser.rol },
-    });
-  } else {
-    // FALLO: Contraseña incorrecta
-    return res.status(401).json({ message: "Credenciales inválidas" });
+  // 4. COMPARE PASSWORD FINAL CHECK (Status 401)
+  if (!isMatch) {
+    console.log(`Login attempt failed: Wrong password for user ${email}.`);
+    return res.status(401).json({ message: "Credenciales inválidas" }); // Ambiguous error
   }
+
+  // 5. SUCCESS (Status 200)
+  console.log(`User ${user.email} successfully authenticated.`);
+  return res.status(200).json({
+    message: "Successfully connected", // Spanish success message
+    // IMPORTANT: Use 'user' data retrieved from the DB, not 'dummyUser'
+    user: { id: user._id, email: user.email, rol: user.rol },
+  });
 };
 
 export { checkLogin };

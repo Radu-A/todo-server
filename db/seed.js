@@ -24,10 +24,9 @@ const seedDB = async () => {
     // 2. CREAR USUARIO DUMMY
     const dummyUser = new User({
       _id: new mongoose.Types.ObjectId(DUMMY_USER_ID),
-      username: "RaduDev",
-      email: "radu.dev@example.com",
-      // En una aplicación real, esta contraseña estaría hasheada.
-      password: "password123",
+      username: "Test",
+      email: "test@example.com", // Usamos el HASH generado de "password-123"
+      password: "$2a$12$im3wfbo.IrHZvNEOpreeieOlW5TjCeF9892BI7YI/iTh2bU5YS4Ay",
     });
 
     await dummyUser.save();
