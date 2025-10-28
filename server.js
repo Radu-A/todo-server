@@ -11,7 +11,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const API_BASE_URL = "https://todo-server-mb4v.onrender.com";
 
 // 1. Opciones de configuración de CORS
 const corsOptions = {
@@ -37,9 +36,9 @@ app.use(express.json());
 // ---------------------------------------------------
 // Routes
 // ---------------------------------------------------
-app.use(`${API_BASE_URL}/api/tasks`, taskRouter);
-app.use(`${API_BASE_URL}/api/auth`, authRouter);
-app.use(`${API_BASE_URL}/api/user`, userRouter);
+app.use(`/api/tasks`, taskRouter);
+app.use(`/api/auth`, authRouter);
+app.use(`/api/user`, userRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World! The ToDo API server is running.");
