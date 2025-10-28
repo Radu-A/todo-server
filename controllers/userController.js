@@ -20,26 +20,98 @@ const getUserByEmail = async (email) => {
   }
 };
 
-const createUser = async (req, res) => {
-  const { userName, email, password } = req.body;
-  console.log(userName, email, password);
+/**
+ * Verifica si un email existe en la base de datos.
+ * Esta función es llamada por una ruta POST o GET desde el frontend
+ * para validar la existencia del usuario antes del login.
+ * * @param {object} req - Objeto de solicitud de Express.
+ * @param {object} res - Objeto de respuesta de Express.
+ */
+const searchEmail = async (req, res) => {
+  // Asumimos que el email viene en el cuerpo de la solicitud (req.body)
+  const { email } = req.body;
 
-  const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(password, salt);
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  // 1. CONSULTA A LA BASE DE DATOS
+  let user;
   try {
-    const response = await User.create({
-      username: userName,
-      email: email,
-      password: hash,
-    });
-    return res.status(200).json({
-      message: `User ${userName} created`,
-    });
+    // Reutilizamos la función que ya existe
+    user = await getUserByEmail(email);
   } catch (error) {
-    return res.status(400).json({
-      message: error,
+    // Manejo de errores de conexión a la DB (Status 500)
+    console.error("Error en la consulta a la DB para verificar email:", error);
+    return res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
+
+  // 2. VERIFICACIÓN DE EXISTENCIA
+  if (user) {
+    // Email encontrado
+    console.log(`Email ${email} found in DB.`);
+    return res.status(200).json({
+      message: "User found",
+      exists: true, // Indica explícitamente que existe
+    });
+  } else {
+    // Email NO encontrado
+    console.log(`Email ${email} not found in DB.`);
+    // Para este tipo de endpoint, un 404 (Not Found) es adecuado,
+    // o un 200 con 'exists: false' si quieres evitar dar pistas sobre la ruta.
+    // Usaremos 200 para mantener el formato 'exists: true/false'.
+    return res.status(200).json({
+      message: "User not found",
+      exists: false,
     });
   }
 };
 
-export { getUserByEmail, createUser };
+const createUser = async (req, res) => {
+  const { username, email, password } = req.body;
+
+  // Log incoming data (use 'username' for consistency)
+  console.log(`Attempting to register user: ${username}, ${email}`);
+
+  // --- HASHING ---
+  // Correction: bcrypt.hash handles salt generation internally, simplifying the code.
+  try {
+    // Generate hash directly (saltRounds=10 is standard)
+    const hash = await bcrypt.hash(password, 10);
+
+    // --- DATABASE INSERTION ---
+    const response = await User.create({
+      username,
+      email,
+      password: hash, // Store the hash
+    });
+
+    // SUCCESS: Status 201 (Created) is more appropriate for new resources
+    return res.status(201).json({
+      message: `User ${username} created successfully.`,
+      // Optional: You could generate and return a JWT here too!
+    });
+  } catch (error) {
+    // --- ERROR HANDLING ---
+    console.error("User registration failed:", error.message);
+
+    // Check for specific MongoDB error (e.g., duplicate key/email)
+    if (error.code === 11000) {
+      return res.status(409).json({
+        // Status 409 Conflict
+        message: "Error: This email address is already registered.",
+      });
+    }
+
+    // Handle validation errors (e.g., missing field) or generic DB errors
+    return res.status(400).json({
+      // Status 400 Bad Request
+      message: "Registration failed due to invalid data or server error.",
+      details: error.message, // Include Mongoose error message for debugging
+    });
+  }
+};
+
+export { getUserByEmail, searchEmail, createUser };
