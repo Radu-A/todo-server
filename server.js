@@ -5,6 +5,7 @@ import cors from "cors";
 import connectDB from "./db/connect.js";
 import taskRouter from "./routers/taskRouter.js";
 import authRouter from "./routers/authRouter.js";
+import userRouter from "./routers/userRouter.js";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use(express.json());
 // ---------------------------------------------------
 app.use("/api/tasks", taskRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World! The ToDo API server is running.");

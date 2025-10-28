@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import bcrypt from "bcrypt";
 
 // ID Temporal y fijo para el usuario que crearemos
 const dummyUser = {
@@ -9,14 +10,36 @@ const dummyUser = {
 };
 
 const getUserByEmail = async (email) => {
-    try {
-        // User.findOne returns the user object or null if not found.
-        const user = await User.findOne({ email: email }).exec(); 
-        return user;
-    } catch (err) {
-        // If the DB connection fails, we throw the error so checkLogin can catch it as a 500.
-        throw new Error("DB_CONNECTION_ERROR"); 
-    }
+  try {
+    // User.findOne returns the user object or null if not found.
+    const user = await User.findOne({ email: email }).exec();
+    return user;
+  } catch (err) {
+    // If the DB connection fails, we throw the error so checkLogin can catch it as a 500.
+    throw new Error("DB_CONNECTION_ERROR");
+  }
 };
 
-export { getUserByEmail };
+const createUser = async (req, res) => {
+  const { userName, email, password } = req.body;
+  console.log(userName, email, password);
+
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(password, salt);
+  try {
+    const response = await User.create({
+      username: userName,
+      email: email,
+      password: hash,
+    });
+    return res.status(200).json({
+      message: `User ${userName} created`,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      message: error,
+    });
+  }
+};
+
+export { getUserByEmail, createUser };
