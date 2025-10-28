@@ -1,16 +1,16 @@
 import Task from "../models/Task.js";
 
 // El ID DUMMY se usa para SIMULAR el ID que el middleware de auth inyectará en req.user.id
-// En el futuro, TODAS las referencias a dummyUserId serán reemplazadas por req.user.id.
 const dummyUserId = "60c72b1f9b1e8b0015f4a6e5";
 
 // ===================================
-// 1. GET TASKS (Unificado: Usa dummyUserId)
+// 1. GET TASKS
 // ===================================
 const getTasks = async (req, res) => {
+  const { userId } = req.user;
   try {
     // Filtra por el ID fijo. En el futuro, será: Task.find({ userId: req.user.id });
-    const tasks = await Task.find({ userId: dummyUserId });
+    const tasks = await Task.find({ userId: userId });
     return res.status(200).json(tasks);
   } catch (error) {
     console.error("Error al obtener las tareas:", error);
@@ -22,11 +22,11 @@ const getTasks = async (req, res) => {
 };
 
 // ===================================
-// 2. CREATE TASK (Unificado: Usa dummyUserId)
+// 2. CREATE TASK
 // ===================================
 const createTask = async (req, res) => {
   const { title } = req.body;
-
+  const { userId } = req.user;
   if (!title) {
     return res
       .status(400)
@@ -35,7 +35,7 @@ const createTask = async (req, res) => {
   try {
     const newTask = new Task({
       title,
-      userId: dummyUserId, // Asigna el ID fijo. En el futuro, será: userId: req.user.id,
+      userId: userId, // Asigna el ID fijo. En el futuro, será: userId: req.user.id,
     });
     const savedTask = await newTask.save();
     return res.status(201).json(savedTask);
@@ -49,12 +49,12 @@ const createTask = async (req, res) => {
 };
 
 // ===================================
-// 3. UPDATE TASK (Unificado: Usa dummyUserId, Elimina req.query.userId)
+// 3. UPDATE TASK
 // ===================================
 const updateTask = async (req, res) => {
   // El ID de la tarea a modificar
-  const taskId = req.params.id; // El ID del usuario propietario. En el futuro, será: const userId = req.user.id;
-  const userId = dummyUserId;
+  const taskId = req.params.id;
+  const { userId } = req.user;
 
   const updateData = req.body; // Eliminamos la validación de req.query.userId porque ya no se necesita
 
@@ -103,13 +103,12 @@ const updateTask = async (req, res) => {
 };
 
 // ===================================
-// 4. DELETE TASK (Unificado: Usa dummyUserId, Elimina req.body.userId)
+// 4. DELETE TASK
 // ===================================
 const deleteTask = async (req, res) => {
   // El ID de la tarea a eliminar
-  const taskId = req.params.id; // El ID del usuario propietario. En el futuro, será: const userId = req.user.id;
-
-  const userId = dummyUserId; // Eliminamos la validación de req.body.userId porque ya no se necesita
+  const taskId = req.params.id;
+  const { userId } = req.user;
 
   try {
     // Criterios de búsqueda: ID de tarea Y ID de usuario fijo para seguridad
