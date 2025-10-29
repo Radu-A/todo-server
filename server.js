@@ -17,7 +17,9 @@ const corsOptions = {
   // Permite peticiones SÓLO desde tu frontend (puerto 5500)
   origin: [
     "http://localhost:5500",
-    "http://127.0.0.1:5500", // <-- Add this one
+    "http://127.0.0.1:5500",
+    "https://todo-list-tau-ten-35.vercel.app/",
+    // <-- Add this one
   ],
   // Permite los métodos que usas: GET, POST, PUT, DELETE
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
