@@ -57,6 +57,7 @@ const checkLogin = async (req, res) => {
   // Token data
   const payload = {
     userId: user._id,
+    username: user.username,
     email: user.email,
   };
   // Sign payload with secret
