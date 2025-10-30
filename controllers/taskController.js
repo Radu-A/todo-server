@@ -51,47 +51,89 @@ const createTask = async (req, res) => {
 // ===================================
 // 3. UPDATE TASK
 // ===================================
+
+import Task from "../models/Task.js";
+
+// ... (las otras funciones: getTasks, createTask, deleteTask, reorderTask) ...
+
 const updateTask = async (req, res) => {
   const taskId = req.params.id;
   const { userId } = req.user;
-  const updateData = req.body;
-
-  // Whitelist allowed fields for update
-  const allowedUpdates = ["title", "status"];
-  const updates = Object.keys(updateData);
-  const isValidOperation = updates.every((update) =>
-    allowedUpdates.includes(update)
-  );
-
-  if (!isValidOperation) {
-    return res.status(400).json({
-      message: "Invalid update. Only 'title' and 'status' are allowed.",
-    });
-  }
+  const updateData = req.body; // ej: { status: "done" } o { title: "..." }
 
   try {
-    // Search criteria: Task ID must match AND it must belong to the authenticated user.
-    // This ensures a user cannot update another user's task.
-    const updatedTask = await Task.findOneAndUpdate(
-      { _id: taskId, userId: userId },
-      { $set: updateData },
-      { new: true, runValidators: true } // 'new: true' returns the modified document
-    );
-
-    if (!updatedTask) {
-      return res
-        .status(404)
-        .json({ message: "Task not found or user does not have permission." });
+    // ---
+    // CASO 1: LA ACTUALIZACIÓN NO ES UN CAMBIO DE ESTADO
+    // ---
+    // (Ej. solo se está cambiando el título)
+    if (!updateData.status) {
+      const updatedTask = await Task.findOneAndUpdate(
+        { _id: taskId, userId: userId },
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+      return res.status(200).json(updatedTask);
     }
 
-    return res.status(200).json(updatedTask);
+    // ---
+    // CASO 2: LA ACTUALIZACIÓN ES UN CAMBIO DE ESTADO
+    // ---
+    const taskToMove = await Task.findOne({ _id: taskId, userId: userId });
+
+    // Si no hay tarea o el estado ya es el que se pide, no hacer nada
+    if (!taskToMove || taskToMove.status === updateData.status) {
+      return res.status(200).json(taskToMove);
+    }
+
+    const newStatus = updateData.status;
+
+    if (newStatus === "done") {
+      // Moviendo de ToDo -> Done
+      // 1. Hacer sitio: Incrementar la posición de TODAS las tareas "done"
+      await Task.updateMany(
+        { userId: userId, status: "done" },
+        { $inc: { position: 1 } }
+      );
+
+      // 2. Mover la tarea: Ponerla en la posición 0 de "done"
+      const updatedTask = await Task.findOneAndUpdate(
+        { _id: taskId, userId: userId },
+        { $set: { status: "done", position: 0 } },
+        { new: true } // Devolver la tarea actualizada
+      );
+      return res.status(200).json(updatedTask);
+    } else {
+      // Moviendo de Done -> ToDo
+      // 1. Compactar la lista "done": Restar 1 a todas las 'done' que estaban
+      //    debajo de la que movemos.
+      await Task.updateMany(
+        {
+          userId: userId,
+          status: "done",
+          position: { $gt: taskToMove.position },
+        },
+        { $inc: { position: -1 } }
+      );
+
+      // 2. Encontrar la nueva posición en "todo" (al final de la lista)
+      const maxPosTask = await Task.findOne({
+        userId: userId,
+        status: "todo",
+      }).sort({ position: -1 });
+      const newPosition = maxPosTask ? maxPosTask.position + 1 : 0;
+
+      // 3. Mover la tarea: Ponerla al final de "todo"
+      const updatedTask = await Task.findOneAndUpdate(
+        { _id: taskId, userId: userId },
+        { $set: { status: "todo", position: newPosition } },
+        { new: true }
+      );
+      return res.status(200).json(updatedTask);
+    }
   } catch (error) {
     console.error("Error updating task:", error);
     if (error.name === "CastError") {
       return res.status(400).json({ message: "Invalid Task ID format." });
-    }
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: error.message });
     }
     return res.status(500).json({
       message: "Server error while updating task",
@@ -99,6 +141,8 @@ const updateTask = async (req, res) => {
     });
   }
 };
+
+export { getTasks, createTask, updateTask, deleteTask, reorderTask }; // Asegúrate de exportar la función actualizada
 
 // ===================================
 // 4. DELETE TASK
