@@ -6,20 +6,21 @@ import Task from "../models/Task.js";
 
 dotenv.config();
 
-const URI = process.env.MONGODB_URI;
-// ID Temporal y fijo para el usuario que crearemos
+// Fixed temporary ID for the user we are creating
 const DUMMY_USER_ID = "60c72b1f9b1e8b0015f4a6e5";
 
 const seedDB = async () => {
   try {
-    // Conexión a MongoDB Atlas
+    // 1. Connect to MongoDB Atlas
     await connectDB();
-    console.log("✅ Conexión a MongoDB establecida para seeding."); // 1. LIMPIEZA: Eliminar datos existentes
+    console.log("✅ MongoDB connection established for seeding.");
 
+    // 2. CLEANUP: Delete existing data
     await User.deleteMany({});
     await Task.deleteMany({});
-    console.log("🗑️ Datos existentes de User y Task eliminados."); // 2. CREAR USUARIO DUMMY
+    console.log("🗑️ Existing User and Task data deleted.");
 
+    // 3. CREATE DUMMY USER
     const dummyUser = new User({
       _id: new mongoose.Types.ObjectId(DUMMY_USER_ID),
       username: "Test",
@@ -29,45 +30,48 @@ const seedDB = async () => {
 
     await dummyUser.save();
     console.log(
-      `👤 Usuario Dummy '${dummyUser.username}' creado con ID: ${DUMMY_USER_ID}`
-    ); // 3. CREAR TAREAS DE PRUEBA Y ASIGNAR POSICIÓN // 💡 Contadores de posición para cada lista
+      `👤 Dummy user '${dummyUser.username}' created with ID: ${DUMMY_USER_ID}`
+    );
 
+    // 4. CREATE TEST TASKS & ASSIGN POSITIONS
+    // Position counters for each status list
     let todoPosition = 0;
     let donePosition = 0;
 
     const initialTasks = [
       {
-        title: "Configurar el servidor Express",
+        title: "Set up the Express server",
         status: "done",
         userId: DUMMY_USER_ID,
       },
       {
-        title: "Definir los esquemas Mongoose (User y Task)",
+        title: "Define Mongoose schemas (User and Task)",
         status: "done",
         userId: DUMMY_USER_ID,
       },
       {
-        title: "Implementar el script de seeding",
+        title: "Implement the seeding script",
         status: "done",
         userId: DUMMY_USER_ID,
       },
       {
-        title: "Crear la ruta POST /tasks",
+        title: "Create the POST /tasks route",
         status: "todo",
         userId: DUMMY_USER_ID,
       },
       {
-        title: "Conectar el Frontend (fetch/axios)",
+        title: "Connect the Frontend (fetch/axios)",
         status: "todo",
         userId: DUMMY_USER_ID,
       },
       {
-        title: "Estudiar las diferencias entre PATCH y PUT",
+        title: "Study the differences between PATCH and PUT",
         status: "todo",
         userId: DUMMY_USER_ID,
       },
-    ]; // 4. MAPEO: Asignar la posición correcta a cada tarea
+    ];
 
+    // 5. MAP: Assign the correct position to each task based on its status
     const tasksWithPositions = initialTasks.map((task) => {
       let position;
       if (task.status === "todo") {
@@ -80,14 +84,14 @@ const seedDB = async () => {
 
     await Task.insertMany(tasksWithPositions);
     console.log(
-      `📝 ${tasksWithPositions.length} tareas iniciales cargadas exitosamente (con posición).`
+      `📝 ${tasksWithPositions.length} initial tasks loaded successfully (with positions).`
     );
   } catch (error) {
-    console.error("❌ Error durante el seeding:", error.message);
+    console.error("❌ Error during seeding:", error.message);
   } finally {
-    // Desconexión
+    // 6. Disconnect
     await mongoose.disconnect();
-    console.log("🔌 Conexión a MongoDB cerrada.");
+    console.log("🔌 MongoDB connection closed.");
   }
 };
 

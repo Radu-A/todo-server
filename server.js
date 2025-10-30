@@ -1,4 +1,4 @@
-// Enviroment variables
+// Environment variables
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
@@ -12,20 +12,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 1. Opciones de configuración de CORS
+// 1. CORS Configuration Options
 const corsOptions = {
-  // Permite peticiones SÓLO desde tu frontend (puerto 5500)
+  // Whitelist specific origins (localhost and Vercel deployment)
   origin: [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "https://todo-list-tau-ten-35.vercel.app",
-    // <-- Add this one
   ],
-  // Permite los métodos que usas: GET, POST, PUT, DELETE
+  // Allow the methods you use: GET, POST, PUT, DELETE
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  // Permite encabezados necesarios, incluyendo 'Content-Type' y, más tarde, 'Authorization'
+  // Allow necessary headers, including 'Content-Type' and 'Authorization'
   allowedHeaders: "Content-Type,Authorization",
-  // Habilita el manejo de credenciales (si usaras cookies)
+  // Enable credentials (if using cookies/sessions)
   credentials: true,
 };
 
@@ -33,7 +32,7 @@ const corsOptions = {
 // Middleware
 // ---------------------------------------------------
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json()); // Parses incoming JSON payloads
 
 // ---------------------------------------------------
 // Routes
@@ -42,6 +41,7 @@ app.use(`/api/tasks`, taskRouter);
 app.use(`/api/auth`, authRouter);
 app.use(`/api/user`, userRouter);
 
+// Root route
 app.get("/", (req, res) => {
   res.send("Hello World! The ToDo API server is running.");
 });
@@ -51,11 +51,11 @@ app.get("/", (req, res) => {
 // ----------------------------------------------------
 const startServer = async () => {
   try {
-    // 1. CONEXIÓN A MONGODB: Esperamos a que la base de datos esté lista
+    // 1. Connect to MongoDB (await)
     await connectDB();
     console.log("✅ MongoDB connection established successfully.");
 
-    // 2. INICIO DEL SERVIDOR: Solo si la DB está conectada
+    // 2. Start the server (only if DB connection is successful)
     app.listen(PORT, () => {
       console.log(`Server running on port: ${PORT}`);
       console.log(`Access at: http://localhost:${PORT}`);

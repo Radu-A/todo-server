@@ -1,26 +1,21 @@
 import Task from "../models/Task.js";
 
-// El ID DUMMY se usa para SIMULAR el ID que el middleware de auth inyectará en req.user.id
-const dummyUserId = "60c72b1f9b1e8b0015f4a6e5";
-
 // ===================================
 // 1. GET TASKS
 // ===================================
 const getTasks = async (req, res) => {
-  // 1. Obtenemos el userId desde req.user (como en tu código)
+  // Get userId from the auth middleware
   const { userId } = req.user;
 
   try {
-    // 2. Añadimos .sort({ position: 1 }) a la consulta find.
-    //    Esto le pide a MongoDB que ordene los resultados por el campo 'position'
-    //    en orden ascendente (1) antes de devolverlos.
+    // Find all tasks for the user and sort them by 'position' ascending.
     const tasks = await Task.find({ userId: userId }).sort({ position: 1 });
 
     return res.status(200).json(tasks);
   } catch (error) {
-    console.error("Error al obtener las tareas:", error);
+    console.error("Error fetching tasks:", error);
     return res.status(500).json({
-      message: "Error en el servidor al obtener las tareas",
+      message: "Server error while fetching tasks",
       error: error.message,
     });
   }
@@ -32,22 +27,22 @@ const getTasks = async (req, res) => {
 const createTask = async (req, res) => {
   const { title } = req.body;
   const { userId } = req.user;
+
   if (!title) {
-    return res
-      .status(400)
-      .json({ message: "El título de la tarea es obligatorio." });
+    return res.status(400).json({ message: "Task title is required." });
   }
+
   try {
     const newTask = new Task({
       title,
-      userId: userId, // Asigna el ID fijo. En el futuro, será: userId: req.user.id,
+      userId: userId, // Assign the authenticated user's ID
     });
     const savedTask = await newTask.save();
     return res.status(201).json(savedTask);
   } catch (error) {
-    console.error("Error al crear la tarea:", error);
+    console.error("Error creating task:", error);
     return res.status(500).json({
-      message: "Error en el servidor al crear la tarea",
+      message: "Server error while creating task",
       error: error.message,
     });
   }
@@ -57,12 +52,11 @@ const createTask = async (req, res) => {
 // 3. UPDATE TASK
 // ===================================
 const updateTask = async (req, res) => {
-  // El ID de la tarea a modificar
   const taskId = req.params.id;
   const { userId } = req.user;
+  const updateData = req.body;
 
-  const updateData = req.body; // Eliminamos la validación de req.query.userId porque ya no se necesita
-
+  // Whitelist allowed fields for update
   const allowedUpdates = ["title", "status"];
   const updates = Object.keys(updateData);
   const isValidOperation = updates.every((update) =>
@@ -71,37 +65,36 @@ const updateTask = async (req, res) => {
 
   if (!isValidOperation) {
     return res.status(400).json({
-      message: "Actualización inválida. Solo se permiten title y status.",
+      message: "Invalid update. Only 'title' and 'status' are allowed.",
     });
   }
 
   try {
-    // Criterios de búsqueda: ID de tarea Y ID de usuario fijo para seguridad
+    // Search criteria: Task ID must match AND it must belong to the authenticated user.
+    // This ensures a user cannot update another user's task.
     const updatedTask = await Task.findOneAndUpdate(
       { _id: taskId, userId: userId },
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true } // 'new: true' returns the modified document
     );
 
     if (!updatedTask) {
       return res
         .status(404)
-        .json({ message: "Tarea no encontrada o no pertenece al usuario." });
+        .json({ message: "Task not found or user does not have permission." });
     }
 
     return res.status(200).json(updatedTask);
   } catch (error) {
-    console.error("Error al actualizar la tarea:", error);
+    console.error("Error updating task:", error);
     if (error.name === "CastError") {
-      return res
-        .status(400)
-        .json({ message: "Formato de ID de tarea inválido." });
+      return res.status(400).json({ message: "Invalid Task ID format." });
     }
     if (error.name === "ValidationError") {
       return res.status(400).json({ message: error.message });
     }
     return res.status(500).json({
-      message: "Error en el servidor al actualizar la tarea",
+      message: "Server error while updating task",
       error: error.message,
     });
   }
@@ -111,12 +104,11 @@ const updateTask = async (req, res) => {
 // 4. DELETE TASK
 // ===================================
 const deleteTask = async (req, res) => {
-  // El ID de la tarea a eliminar
   const taskId = req.params.id;
   const { userId } = req.user;
 
   try {
-    // Criterios de búsqueda: ID de tarea Y ID de usuario fijo para seguridad
+    // Search criteria: Task ID must match AND it must belong to the authenticated user.
     const deletedTask = await Task.findOneAndDelete({
       _id: taskId,
       userId: userId,
@@ -125,22 +117,20 @@ const deleteTask = async (req, res) => {
     if (!deletedTask) {
       return res
         .status(404)
-        .json({ message: "Tarea no encontrada o no pertenece al usuario." });
+        .json({ message: "Task not found or user does not have permission." });
     }
 
     return res.status(200).json({
-      message: "Tarea eliminada con éxito.",
+      message: "Task deleted successfully.",
       task: deletedTask,
     });
   } catch (error) {
-    console.error("Error al eliminar la tarea:", error);
+    console.error("Error deleting task:", error);
     if (error.name === "CastError") {
-      return res
-        .status(400)
-        .json({ message: "Formato de ID de tarea inválido." });
+      return res.status(400).json({ message: "Invalid Task ID format." });
     }
     return res.status(500).json({
-      message: "Error en el servidor al eliminar la tarea",
+      message: "Server error while deleting task",
       error: error.message,
     });
   }
@@ -150,43 +140,43 @@ const deleteTask = async (req, res) => {
 // 5. REORDER TASKS
 // ===================================
 /**
- * Reordena una tarea.
- * Recibe el ID de la tarea, su status, su posición antigua y la nueva.
- * Actualiza la tarea movida y "desplaza" todas las otras tareas afectadas.
+ * Reorders a task.
+ * Receives the task ID, its status, its old position, and the new position.
+ * Updates the moved task and shifts all other affected tasks.
  */
 const reorderTask = async (req, res) => {
   try {
-    const { id } = req.params; // ID de la tarea movida
+    const { id } = req.params; // ID of the moved task
     const { oldPosition, newPosition, status } = req.body;
-    const { userId } = req.user; // Obtenido desde el middleware isAuth
+    const { userId } = req.user; // From isAuth middleware
 
-    // 1. Si no hay movimiento, no hacer nada.
+    // 1. If there's no movement, do nothing.
     if (oldPosition === newPosition) {
       return res.status(200).json({ message: "No change in position." });
     }
 
-    // 2. Determinar la dirección del movimiento
-    // Si (new > old), se mueve "hacia abajo" (ej: 1 -> 3). Las tareas en medio deben restar 1 (-1).
-    // Si (new < old), se mueve "hacia arriba" (ej: 3 -> 1). Las tareas en medio deben sumar 1 (+1).
+    // 2. Determine the movement direction
+    // If (new > old), it moves "down" (e.g., 1 -> 3). Tasks in between must subtract 1 (-1).
+    // If (new < old), it moves "up" (e.g., 3 -> 1). Tasks in between must add 1 (+1).
     const direction = newPosition > oldPosition ? -1 : 1;
 
-    // 3. Determinar el rango de tareas a "desplazar"
+    // 3. Determine the range of tasks to "shift"
     let start, end;
     if (direction === -1) {
-      // Mover hacia abajo (ej: 1 -> 3)
-      // Afecta a las tareas en las posiciones 2 y 3 (oldPosition + 1 ... newPosition)
+      // Move down (e.g., 1 -> 3)
+      // Affects tasks at positions 2 and 3 (oldPosition + 1 ... newPosition)
       start = oldPosition + 1;
       end = newPosition;
     } else {
-      // Mover hacia arriba (ej: 3 -> 1)
-      // Afecta a las tareas en las posiciones 1 y 2 (newPosition ... oldPosition - 1)
+      // Move up (e.g., 3 -> 1)
+      // Affects tasks at positions 1 and 2 (newPosition ... oldPosition - 1)
       start = newPosition;
       end = oldPosition - 1;
     }
 
-    // 4. Crear la lista de operaciones 'bulk'
+    // 4. Create the 'bulk' operations list
     const operations = [
-      // Operación 1: Desplazar todas las tareas en el rango
+      // Operation 1: Shift all tasks in the affected range
       {
         updateMany: {
           filter: {
@@ -195,11 +185,11 @@ const reorderTask = async (req, res) => {
             position: { $gte: start, $lte: end },
           },
           update: {
-            $inc: { position: direction }, // Suma 1 o resta 1
+            $inc: { position: direction }, // Add 1 or subtract 1
           },
         },
       },
-      // Operación 2: Actualizar la posición de la tarea que movimos
+      // Operation 2: Update the position of the task we actually moved
       {
         updateOne: {
           filter: { _id: id, userId: userId },
@@ -210,12 +200,12 @@ const reorderTask = async (req, res) => {
       },
     ];
 
-    // 5. Ejecutar las operaciones en una transacción atómica
+    // 5. Execute the operations atomically
     await Task.bulkWrite(operations);
 
     res.status(200).json({ message: "Tasks reordered successfully." });
   } catch (error) {
-    console.error("Error en reorderTask:", error.message);
+    console.error("Error in reorderTask:", error.message);
     res
       .status(500)
       .json({ message: "Server error during reorder", error: error.message });
