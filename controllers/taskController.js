@@ -7,10 +7,15 @@ const dummyUserId = "60c72b1f9b1e8b0015f4a6e5";
 // 1. GET TASKS
 // ===================================
 const getTasks = async (req, res) => {
+  // 1. Obtenemos el userId desde req.user (como en tu código)
   const { userId } = req.user;
+
   try {
-    // Filtra por el ID fijo. En el futuro, será: Task.find({ userId: req.user.id });
-    const tasks = await Task.find({ userId: userId });
+    // 2. Añadimos .sort({ position: 1 }) a la consulta find.
+    //    Esto le pide a MongoDB que ordene los resultados por el campo 'position'
+    //    en orden ascendente (1) antes de devolverlos.
+    const tasks = await Task.find({ userId: userId }).sort({ position: 1 });
+
     return res.status(200).json(tasks);
   } catch (error) {
     console.error("Error al obtener las tareas:", error);
@@ -153,7 +158,7 @@ const reorderTask = async (req, res) => {
   try {
     const { id } = req.params; // ID de la tarea movida
     const { oldPosition, newPosition, status } = req.body;
-    const userId = req.userId; // Obtenido desde el middleware isAuth
+    const { userId } = req.user; // Obtenido desde el middleware isAuth
 
     // 1. Si no hay movimiento, no hacer nada.
     if (oldPosition === newPosition) {
