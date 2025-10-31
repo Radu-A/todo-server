@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import connectDB from "./db/connect.js";
 import taskRouter from "./routers/taskRouter.js";
 import authRouter from "./routers/authRouter.js";
@@ -32,6 +33,11 @@ const corsOptions = {
 // Middleware
 // ---------------------------------------------------
 app.use(cors(corsOptions));
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: "same-origin-allow-popups",
+  })
+);
 app.use(express.json()); // Parses incoming JSON payloads
 
 // ---------------------------------------------------

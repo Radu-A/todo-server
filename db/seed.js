@@ -26,6 +26,7 @@ const seedDB = async () => {
       username: "Test",
       email: "test@example.com",
       password: "$2a$12$im3wfbo.IrHZvNEOpreeieOlW5TjCeF9892BI7YI/iTh2bU5YS4Ay", // password-123
+      googleId: null,
     });
 
     await dummyUser.save();

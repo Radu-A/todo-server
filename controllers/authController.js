@@ -1,8 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
+
+import User from "../models/User.js";
 import { getUserByEmail } from "./userController.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const checkLogin = async (req, res) => {
   const { email, password } = req.body;
@@ -39,22 +44,71 @@ const checkLogin = async (req, res) => {
     return res.status(401).json({ message: "Invalid credentials" });
   } // 5. Success: Generate and send JWT
 
-  const payload = {
+  const jwtPayload = {
     userId: user._id,
     username: user.username,
     email: user.email,
   }; // Sign payload with secret
 
-  const token = jwt.sign(payload, JWT_SECRET, {
+  const jwtToken = jwt.sign(jwtPayload, JWT_SECRET, {
     expiresIn: "24h",
   });
 
   console.log(`User ${user.email} successfully authenticated.`);
   return res.status(200).json({
     message: "Login successful",
-    token: token,
+    token: jwtToken,
     user: { id: user._id, email: user.email },
   });
 };
 
-export { checkLogin };
+const googleLogin = async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { name, email, sub: googleId } = payload;
+
+    let user = await User.findOne({ email: email });
+
+    if (!user) {
+      user = new User({
+        username: username,
+        email: email,
+        googleId: googleId,
+      });
+      await user.save();
+    }
+
+    const jwtPayload = {
+      userId: user._id,
+      username: user.username,
+      email: user.email,
+    };
+
+    const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    res.status(200).json({
+      ok: true,
+      message: "Autenticación exitosa",
+      token: jwtToken,
+      userId: user.id,
+      username: user.username,
+    });
+  } catch (error) {
+    console.error("Error en Google auth:", error);
+    res.status(400).json({
+      ok: false,
+      message: "Token de Google no válido o error del servidor",
+    });
+  }
+};
+
+export { checkLogin, googleLogin };
