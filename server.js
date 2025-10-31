@@ -32,6 +32,10 @@ const corsOptions = {
 // ---------------------------------------------------
 // Middleware
 // ---------------------------------------------------
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
 app.use(cors(corsOptions));
 app.use(
   helmet({
