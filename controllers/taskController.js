@@ -52,10 +52,6 @@ const createTask = async (req, res) => {
 // 3. UPDATE TASK
 // ===================================
 
-import Task from "../models/Task.js";
-
-// ... (las otras funciones: getTasks, createTask, deleteTask, reorderTask) ...
-
 const updateTask = async (req, res) => {
   const taskId = req.params.id;
   const { userId } = req.user;
