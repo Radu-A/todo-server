@@ -78,7 +78,7 @@ const googleLogin = async (req, res) => {
 
     if (!user) {
       user = new User({
-        username: username,
+        username: name,
         email: email,
         googleId: googleId,
       });
