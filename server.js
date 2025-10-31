@@ -32,14 +32,11 @@ const corsOptions = {
 // ---------------------------------------------------
 // Middleware
 // ---------------------------------------------------
-app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
-  next();
-});
 app.use(cors(corsOptions));
 app.use(
   helmet({
-    crossOriginOpenerPolicy: "same-origin-allow-popups",
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginEmbedderPolicy: false, // 👈 Desactiva COEP (evita el bloqueo en móviles)
   })
 );
 app.use(express.json()); // Parses incoming JSON payloads
