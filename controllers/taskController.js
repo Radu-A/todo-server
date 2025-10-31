@@ -138,8 +138,6 @@ const updateTask = async (req, res) => {
   }
 };
 
-export { getTasks, createTask, updateTask, deleteTask, reorderTask }; // Asegúrate de exportar la función actualizada
-
 // ===================================
 // 4. DELETE TASK
 // ===================================
