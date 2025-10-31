@@ -20,7 +20,7 @@ const corsOptions = {
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "https://todo-list-tau-ten-35.vercel.app",
-    "https://accounts.google.com/o/oauth2/v2/auth/oauthchooseaccount?as=qHr4F9Yt_tiXM6kIST2sFcowj_cTxGaWXITLGiSu78U&client_id=800527968947-5qmk9dg990v49s19kho4dtj96eudvuiv.apps.googleusercontent.com&scope=openid%20email%20profile&response_type=id_token&gsiwebsdk=gis_attributes&redirect_uri=gis_transform&response_mode=form_post&origin=https%3A%2F%2Ftodo-list-tau-ten-35.vercel.app&display=popup&prompt=select_account&gis_params=CidodHRwczovL3RvZG8tbGlzdC10YXUtdGVuLTM1LnZlcmNlbC5hcHASDWdpc190cmFuc2Zvcm0YByorcUhyNEY5WXRfdGlYTTZrSVNUMnNGY293al9jVHhHYVdYSVRMR2lTdTc4VTJIODAwNTI3OTY4OTQ3LTVxbWs5ZGc5OTB2NDlzMTlraG80ZHRqOTZldWR2dWl2LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tOAFCQDIzMGFlOGRiNDM2OWU2NzQyNzlhYzMwNzgwMzA3NDlkN2FjNDk1Y2Q4NjEwMDBiMDcwZDFjZTgzZjVmN2Q0ZTY&service=lso&o2v=1&flowName=GeneralOAuthFlow",
+    "https://accounts.google.com",
   ],
   // Allow the methods you use: GET, POST, PUT, DELETE
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
