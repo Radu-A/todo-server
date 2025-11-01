@@ -36,7 +36,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(
   helmet({
-    crossOriginOpenerPolicy: false,
+    crossOriginOpenerPolicy: { policy: "unsafe-none" },
     crossOriginEmbedderPolicy: false, // 👈 Desactiva COEP (evita el bloqueo en móviles)
   })
 );
