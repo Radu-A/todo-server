@@ -34,12 +34,12 @@ const corsOptions = {
 // Middleware
 // ---------------------------------------------------
 app.use(cors(corsOptions));
-// app.use(
-//   helmet({
-//     crossOriginOpenerPolicy: { policy: "unsafe-none" },
-//     crossOriginEmbedderPolicy: false, // 👈 Desactiva COEP (evita el bloqueo en móviles)
-//   })
-// );
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: "unsafe-none" },
+    crossOriginEmbedderPolicy: false, // 👈 Desactiva COEP (evita el bloqueo en móviles)
+  })
+);
 app.use(express.json()); // Parses incoming JSON payloads
 
 // ---------------------------------------------------
