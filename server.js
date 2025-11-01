@@ -36,8 +36,20 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(
   helmet({
-    crossOriginOpenerPolicy: { policy: "unsafe-none" },
-    crossOriginEmbedderPolicy: false, // 👈 Desactiva COEP (evita el bloqueo en móviles)
+    crossOriginOpenerPolicy: false, // 👈 Desactiva completamente COOP
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://accounts.google.com"],
+        frameSrc: ["'self'", "https://accounts.google.com"],
+        connectSrc: [
+          "'self'",
+          "https://accounts.google.com",
+          "https://zealous-odele-radu-a-2bb4e20d.koyeb.app",
+        ],
+      },
+    },
   })
 );
 app.use(express.json()); // Parses incoming JSON payloads
