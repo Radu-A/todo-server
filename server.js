@@ -19,7 +19,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5500", // local
     "http://127.0.0.1:5500", // local
-    "https://todo-front-olive.vercel.app", // vercel
+    "https://todo-front-mu.vercel.app", // vercel
     "https://todo-front-vwde.onrender.com", // render
     "https://accounts.google.com", // google popup - not working
   ],
