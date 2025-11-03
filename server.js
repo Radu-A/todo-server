@@ -17,11 +17,11 @@ const PORT = process.env.PORT || 5000;
 const corsOptions = {
   // Whitelist specific origins (localhost and Vercel deployment)
   origin: [
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "https://todo-list-tau-ten-35.vercel.app",
-    "https://accounts.google.com",
-    "https://todo-front-vwde.onrender.com",
+    "http://localhost:5500", // local
+    "http://127.0.0.1:5500", // local
+    "https://todo-front-olive.vercel.app/", // vercel
+    "https://todo-front-vwde.onrender.com", // render
+    "https://accounts.google.com", // google popup - not working
   ],
   // Allow the methods you use: GET, POST, PUT, DELETE
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
