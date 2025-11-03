@@ -96,7 +96,7 @@ const createUser = async (req, res) => {
     // --- ERROR HANDLING ---
     console.error("User registration failed:", error.message);
 
-    // Check for duplicate key error (email already exists)
+    // 1. Check for duplicate key error (email already exists)
     if (error.code === 11000) {
       return res.status(409).json({
         // Status 409 Conflict
@@ -104,11 +104,18 @@ const createUser = async (req, res) => {
       });
     }
 
-    // Handle Mongoose validation errors or other DB errors
-    return res.status(400).json({
-      // Status 400 Bad Request
-      message: "Registration failed due to invalid data.",
-      details: error.message,
+    // 2. Check specifically for Mongoose Validation Errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        // Status 400 Bad Request
+        message: "Registration failed due to invalid data.",
+        details: error.message, // O un mensaje más amigable
+      });
+    }
+
+    // 3. For any other error (DB connection, etc.), send a 500
+    return res.status(500).json({
+      message: "An internal server error occurred during registration.",
     });
   }
 };
